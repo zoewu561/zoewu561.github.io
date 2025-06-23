@@ -25,7 +25,7 @@ import rehypeUnwrapImages from "rehype-unwrap-images";
 export default defineConfig({
 	site: siteConfig.url,
 	image: {
-		domains: ["zoewu561.github.io"],
+		domains: ["webmention.io"],
 	},
 	integrations: [
 		expressiveCode(expressiveCodeOptions),
