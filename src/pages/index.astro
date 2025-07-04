@@ -1,61 +1,34 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content";
 import SocialList from "@/components/SocialList.astro";
-import PostPreview from "@/components/blog/PostPreview.astro";
-import Note from "@/components/note/Note.astro";
-import { getAllPosts } from "@/data/post";
 import PageLayout from "@/layouts/Base.astro";
-import { collectionDateSort } from "@/utils/date";
-
-// Posts
-const MAX_POSTS = 10;
-const allPosts = await getAllPosts();
-const allPostsByDate = allPosts
-	.sort(collectionDateSort)
-	.slice(0, MAX_POSTS) as CollectionEntry<"post">[];
-
-// Notes
-const MAX_NOTES = 5;
-const allNotes = await getCollection("note");
-const latestNotes = allNotes.sort(collectionDateSort).slice(0, MAX_NOTES);
 ---
 
 <PageLayout meta={{ title: "Home" }}>
 	<section>
-		<h1 class="title mb-6">Hello World!</h1>
+		<h1 class="title mb-6">Hi, there!</h1>
 		<p class="mb-4">
-			Hi, I’m a theme for Astro, a simple starter that you can use to create your website or blog.
-			If you want to know more about how you can customise me, add more posts, and make it your own,
-			click on the GitHub icon link below and it will take you to my repo.
+			Welcome to my blog! I'm your fellow human who dreams of a peaceful world — a world where
+			everyone's rights are respected, and where we live in harmony with nature.
 		</p>
+
+		<p class="mb-4">
+			This big dream takes effort from all of us. As someone who cares deeply about these issues, I
+			want to play my part in building a more sustainable society.
+		</p>
+
+		<p class="mb-2">Use the buttons above to explore my journey:</p>
+
+		<ul class="mb-4 list-inside list-disc">
+			<li>On the <strong>About</strong> page, you can get to know me better.</li>
+			<li>
+				On the <strong>Blog</strong>, I’ll share my thoughts, experiences, and insights on
+				sustainability.
+			</li>
+			<li>
+				On the <strong>Notes</strong> page, you’ll find study notes from my recent learning — especially
+				around GRI standards — as I work toward becoming a more sustainable manager.
+			</li>
+		</ul>
 		<SocialList />
 	</section>
-	<section class="mt-16">
-		<h2 class="title text-accent mb-6 text-xl"><a href="/posts/">Posts</a></h2>
-		<ul class="space-y-6" role="list">
-			{
-				allPostsByDate.map((p) => (
-					<li class="grid gap-2 sm:grid-cols-[auto_1fr]">
-						<PostPreview post={p} />
-					</li>
-				))
-			}
-		</ul>
-	</section>
-	{
-		latestNotes.length > 0 && (
-			<section class="mt-16">
-				<h2 class="title text-accent mb-6 text-xl">
-					<a href="/notes/">Notes</a>
-				</h2>
-				<ul class="space-y-6" role="list">
-					{latestNotes.map((note) => (
-						<li>
-							<Note note={note} as="h3" isPreview />
-						</li>
-					))}
-				</ul>
-			</section>
-		)
-	}
 </PageLayout>
