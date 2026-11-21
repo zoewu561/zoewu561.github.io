@@ -13,8 +13,8 @@ window.TRIPS = [
   {
     id: 'tokyo-demo', year: 2026, country: 'Japan', countryCode: 'JPN', city: 'Tokyo',
     characters: [
-      {name: 'Zoe', image: 'assets/zoe-traveler.png', portrait: 'assets/zoe-portrait.png', walkCycle: 'assets/zoe-walk-cycle.png', tastingImage: 'assets/zoe-tasting.png'},
-      {name: 'her travel companion', image: 'assets/travel-companion.png', portrait: 'assets/companion-portrait.png', walkCycle: 'assets/companion-walk-cycle.png', tastingImage: 'assets/companion-tasting.png'}
+      {name: 'Zoe', image: 'assets/zoe-traveler.png', portrait: 'assets/zoe-portrait.png?v=2', walkCycle: 'assets/zoe-walk-cycle.png', tastingImage: 'assets/zoe-tasting.png'},
+      {name: 'her travel companion', image: 'assets/travel-companion.png', portrait: 'assets/companion-portrait.png?v=2', walkCycle: 'assets/companion-walk-cycle.png', tastingImage: 'assets/companion-tasting.png'}
     ],
     month: 'September', start: '2026-09-25', end: '2026-09-28', accent: 'lavender', cover: '',
     days: [
