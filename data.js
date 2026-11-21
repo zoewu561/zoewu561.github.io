@@ -2,6 +2,7 @@
  * PREVIEW DATA ONLY — these are layout examples, not Zoe's travel records.
  * Add a cover image later with cover: 'assets/your-cover.png'.
  * Add a stop image with image: 'assets/your-photo.png'.
+ * Give a trip a characters array to show its illustrated walkers.
  * Each day may contain any number of stops. Array order is travel order.
  * Day names and image spaces are generated automatically.
  * countryCode: ISO alpha-3, matching WORLD_COUNTRIES.
@@ -9,6 +10,10 @@
 window.TRIPS = [
   {
     id: 'tokyo-demo', year: 2026, country: 'Japan', countryCode: 'JPN', city: 'Tokyo',
+    characters: [
+      {name: 'Zoe', image: 'assets/zoe-traveler.png'},
+      {name: 'her travel companion', image: 'assets/travel-companion.png'}
+    ],
     month: 'September', start: '2026-09-25', end: '2026-09-28', accent: 'lavender', cover: '',
     days: [
       {date: '2026-09-25', stops: [

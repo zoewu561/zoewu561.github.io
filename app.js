@@ -107,12 +107,26 @@ function placeholderCharacter() {
     <g class="arm"><path class="line" d="m48 49 12 10 10-3"/></g>
   </svg><span class="walker-date"></span></div>`;
 }
+function illustratedCharacters(characters) {
+  const portraits = characters.map(({image}) =>
+    `<img src="${escapeHtml(image)}" alt="" draggable="false">`
+  ).join('');
+  return `<div class="walker walker--illustrated" role="img"><div class="walker-portraits" aria-hidden="true">${portraits}</div><span class="walker-date"></span></div>`;
+}
 function renderJourney(id, from) {
   // Old sample links continue to lead to an available preview.
   const aliases = {'japan-spring':'tokyo-demo', 'seoul-autumn':'seoul-demo', 'germany-summer':'osaka-demo'};
   const trip = trips.find(t => t.id === (aliases[id] || id));
   if (!trip) return renderMissing();
   const stops = math.buildStops(trip);
+  const characters = trip.characters ?? [];
+  const illustrated = characters.length > 0;
+  const walkerName = illustrated
+    ? new Intl.ListFormat('en').format(characters.map(({name}) => name))
+    : 'Placeholder character';
+  const railAttributes = illustrated
+    ? `class="controller-rail controller-rail--illustrated" style="--character-count:${characters.length}"`
+    : 'class="controller-rail"';
   const allowedFrom = /^(year\/\d{4}|country\/[A-Z]{3})$/.test(from || '') ? from : 'year/' + trip.year;
   const returnHref = '#/' + allowedFrom;
   main.innerHTML = `<article class="journey-scroll" style="--travel-distance:${Math.max(3800, stops.length * 490)}px">
@@ -122,11 +136,11 @@ function renderJourney(id, from) {
       <div class="memory-layer">${stops.map((stop, i) => `<div class="memory" data-stop="${i}" aria-hidden="true"><div class="memory-space">${stop.image ? `<img src="${escapeHtml(stop.image)}" alt="${escapeHtml(stop.label)}">` : `${doodle(stop.kind)}<span>${escapeHtml(stop.label)}</span>`}</div><div class="memory-tag">${escapeHtml(stop.time)}</div>${['food','drink'].includes(stop.kind) ? `<button type="button" class="taste-button" data-taste="${i}" tabindex="-1">${stop.kind === 'drink' ? 'Try a little sip' : 'Try a little bite'}</button>` : ''}<div class="taste-note" hidden></div></div>`).join('')}</div>
       <div class="journey-controls">
         <div class="mobile-dock-heading"><output class="mobile-current-date"></output><span class="mobile-current-day"></span></div>
-        <div class="controller-rail">
-          ${placeholderCharacter()}
-          <input class="journey-range" type="range" min="0" max="10000" step="1" value="0" aria-label="Drag Zoe to move forward or back through the trip">
+        <div ${railAttributes}>
+          ${illustrated ? illustratedCharacters(characters) : placeholderCharacter()}
+          <input class="journey-range" type="range" min="0" max="10000" step="1" value="0" aria-label="Drag to move forward or back through the trip">
         </div>
-        <div class="mobile-dock-footer"><button class="mobile-step mobile-previous" type="button">Back</button><span>Drag me to explore</span><button class="mobile-step mobile-next" type="button">Next</button></div>
+        <div class="mobile-dock-footer"><button class="mobile-step mobile-previous" type="button">Back</button><span>Drag to explore</span><button class="mobile-step mobile-next" type="button">Next</button></div>
       </div>
       <div class="journey-end"><p>A little trip, remembered.</p><a href="${returnHref}">Back to trips</a></div>
       <p class="journey-instructions"><span class="mouse" aria-hidden="true"></span>Scroll to walk. Scroll back to revisit.</p><span class="journey-key-hint">Keyboard: left / right</span>
@@ -160,7 +174,7 @@ function renderJourney(id, from) {
   const consumed = new Set();
 
   function measure() {
-    stage.setAttribute('aria-label', mobile ? 'Interactive sample trip. Drag Zoe at the bottom, or use Back and Next to explore each memory.' : 'Interactive sample trip. Scroll down to walk forward, scroll up to return. Left and right arrow keys also move the character.');
+    stage.setAttribute('aria-label', mobile ? 'Interactive sample trip. Drag along the track at the bottom, or use Back and Next to explore each memory.' : 'Interactive sample trip. Scroll down to walk forward, scroll up to return. Left and right arrow keys also move the character.');
     const headerHeight = document.querySelector('.site-header').offsetHeight;
     trackTop = window.scrollY + track.getBoundingClientRect().top - headerHeight;
     travel = Math.max(1, track.offsetHeight - stage.offsetHeight);
@@ -186,7 +200,7 @@ function renderJourney(id, from) {
     date.textContent = shortDate(state.stop.date);
     mobileDate.textContent = shortDate(state.stop.date);
     mobileDay.textContent = `Day ${state.stop.dayIndex + 1} of ${trip.days.length}`;
-    walker.setAttribute('aria-label', `Placeholder character. ${shortDate(state.stop.date)}. ${state.stop.title}`);
+    walker.setAttribute('aria-label', `${walkerName}. ${shortDate(state.stop.date)}. ${state.stop.title}`);
     memories.forEach((memory, index) => {
       const selected = index === state.index;
       memory.classList.toggle('active', selected);
