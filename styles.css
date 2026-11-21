@@ -16,11 +16,20 @@ body.is-journey .site-header{position:sticky;top:0}body.is-journey .site-footer{
   gap:12px;
   margin-top:8px;
 }
-.trip-portraits img{
+.trip-portrait{display:grid}
+.trip-portrait img{
+  grid-area:1 / 1;
   display:block;
   width:var(--trip-portrait-size);
   height:var(--trip-portrait-size);
   object-fit:contain;
+}
+.trip-portrait-open{opacity:0}
+.trip-card:focus-visible .trip-portrait:has(.trip-portrait-open) img:first-child{opacity:0}
+.trip-card:focus-visible .trip-portrait-open{opacity:1}
+@media(any-hover:hover){
+  .trip-card:hover .trip-portrait:has(.trip-portrait-open) img:first-child{opacity:0}
+  .trip-card:hover .trip-portrait-open{opacity:1}
 }
 
 /* The mobile controller is transparent to the approved desktop layout. */

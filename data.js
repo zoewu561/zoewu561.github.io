@@ -3,7 +3,7 @@
  * Add a cover image later with cover: 'assets/your-cover.png'.
  * Add a stop image with image: 'assets/your-photo.png'.
  * Give a trip a characters array to show its illustrated walkers.
- * A character’s optional portrait appears under the date on the trip card.
+ * A character’s optional portrait appears under the date. portraitOpen appears on trip card hover.
  * Optional walkCycle images contain four left-to-right frames of equal width.
  * Each day may contain any number of stops. Array order is travel order.
  * Day names and image spaces are generated automatically.
@@ -13,8 +13,8 @@ window.TRIPS = [
   {
     id: 'tokyo-demo', year: 2026, country: 'Japan', countryCode: 'JPN', city: 'Tokyo',
     characters: [
-      {name: 'Zoe', image: 'assets/zoe-traveler.png', portrait: 'assets/zoe-portrait.png?v=4', walkCycle: 'assets/zoe-walk-cycle.png', tastingImage: 'assets/zoe-tasting.png'},
-      {name: 'her travel companion', image: 'assets/travel-companion.png', portrait: 'assets/companion-portrait.png?v=4', walkCycle: 'assets/companion-walk-cycle.png', tastingImage: 'assets/companion-tasting.png'}
+      {name: 'Zoe', image: 'assets/zoe-traveler.png', portrait: 'assets/zoe-portrait.png?v=4', portraitOpen: 'assets/zoe-portrait-open.png', walkCycle: 'assets/zoe-walk-cycle.png', tastingImage: 'assets/zoe-tasting.png'},
+      {name: 'her travel companion', image: 'assets/travel-companion.png', portrait: 'assets/companion-portrait.png?v=4', portraitOpen: 'assets/companion-portrait-open.png', walkCycle: 'assets/companion-walk-cycle.png', tastingImage: 'assets/companion-tasting.png'}
     ],
     month: 'September', start: '2026-09-25', end: '2026-09-28', accent: 'lavender', cover: '',
     days: [

@@ -29,9 +29,13 @@ function shortDate(date) {
   return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', timeZone:'UTC'}).format(new Date(date + 'T12:00:00Z'));
 }
 function tripCard(trip, from) {
-  const portraits = (trip.characters ?? []).map(({name, portrait}) =>
-    portrait ? `<img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">` : ''
-  ).join('');
+  const portraits = (trip.characters ?? []).filter(character => character.portrait)
+    .map(({name, portrait, portraitOpen}) => {
+      const open = portraitOpen
+        ? `<img class="trip-portrait-open" src="${escapeHtml(portraitOpen)}" alt="" aria-hidden="true" width="68" height="68">`
+        : '';
+      return `<span class="trip-portrait"><img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">${open}</span>`;
+    }).join('');
   return `<a class="trip-card" href="#/trip/${trip.id}?from=${encodeURIComponent(from)}">
     <h2>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h2>
     <div class="cover-space ${trip.accent}">${trip.cover ? `<img src="${escapeHtml(trip.cover)}" alt="${escapeHtml(trip.city)} trip illustration">` : `${doodle('cover')}<span>Your illustration goes here</span>`}</div>
