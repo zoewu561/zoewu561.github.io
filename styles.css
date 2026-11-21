@@ -25,11 +25,11 @@ body.is-journey .site-header{position:sticky;top:0}body.is-journey .site-footer{
   object-fit:contain;
 }
 .trip-portrait-hover{opacity:0}
-.trip-card:focus-visible .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
-.trip-card:focus-visible .trip-portrait-hover{opacity:1}
+.trip-card.portraits-ready:focus-visible .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
+.trip-card.portraits-ready:focus-visible .trip-portrait-hover{opacity:1}
 @media(any-hover:hover){
-  .trip-card:hover .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
-  .trip-card:hover .trip-portrait-hover{opacity:1}
+  .trip-card.portraits-ready:hover .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
+  .trip-card.portraits-ready:hover .trip-portrait-hover{opacity:1}
 }
 
 /* The mobile controller is transparent to the approved desktop layout. */
@@ -81,7 +81,10 @@ body.is-journey .site-header{position:sticky;top:0}body.is-journey .site-footer{
   visibility:hidden;
 }
 .walker.tasting .walker-portrait--tasting .walker-travel-pose{visibility:hidden}
-.walker.tasting .walker-taste-pose{visibility:visible}
+.walker.tasting .walker-portrait--tasting .walker-taste-pose{visibility:visible}
+
+.memory-space img{position:absolute;inset:0}
+.memory-space:has(img:not([hidden])) > :not(img){display:none}
 
 @media(min-width:761px){
   .memory{transform:none;transition:none}

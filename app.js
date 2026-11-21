@@ -5,6 +5,42 @@ const math = window.JourneyMath;
 const years = [...new Set(trips.map(trip => trip.year))].sort((a, b) => a - b);
 const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 let disposePage = () => {};
+const warmedImages = new Set();
+
+function warmImage(source) {
+  if (!source || navigator.connection?.saveData || warmedImages.has(source)) return;
+  warmedImages.add(source);
+  const image = new Image();
+  image.fetchPriority = 'low';
+  image.onerror = () => warmedImages.delete(source);
+  image.src = source;
+}
+
+function warmTripCards(selected) {
+  selected.slice(0, 2).forEach(trip => {
+    warmImage(trip.cover);
+    trip.characters?.forEach(({portrait}) => warmImage(portrait));
+  });
+}
+
+function warmJourneyOpening(trip) {
+  trip.characters?.forEach(({walkCycle, image}) => warmImage(walkCycle ?? image));
+  warmImage(trip.days.find(day => day.stops.length)?.stops[0].image);
+}
+
+function warmDestination(event) {
+  const link = event.target.closest('a[href^="#/"], [data-country]');
+  if (!link) return;
+  const [page, id] = (link.dataset.country
+    ? 'country/' + link.dataset.country
+    : link.getAttribute('href').slice(2).split('?')[0]).split('/');
+  if (page === 'year') warmTripCards(trips.filter(trip => trip.year === Number(id)));
+  if (page === 'country') warmTripCards(trips.filter(trip => trip.countryCode === id));
+  if (page === 'trip') {
+    const trip = trips.find(trip => trip.id === id);
+    if (trip) warmJourneyOpening(trip);
+  }
+}
 
 function doodle(kind, className = '') {
   const shapes = {
@@ -28,20 +64,34 @@ function pageTitle(title, subtitle, eyebrow = '') {
 function shortDate(date) {
   return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', timeZone:'UTC'}).format(new Date(date + 'T12:00:00Z'));
 }
-function tripCard(trip, from) {
+function tripCard(trip, from, eager) {
+  const loading = eager ? 'eager' : 'lazy';
   const portraits = (trip.characters ?? []).filter(character => character.portrait)
     .map(({name, portrait, portraitHover}) => {
       const hover = portraitHover
-        ? `<img class="trip-portrait-hover" src="${escapeHtml(portraitHover)}" alt="" aria-hidden="true" width="68" height="68">`
+        ? `<img class="trip-portrait-hover" src="${escapeHtml(portraitHover)}" alt="" aria-hidden="true" width="68" height="68" loading="${loading}" fetchpriority="low" decoding="async">`
         : '';
-      return `<span class="trip-portrait"><img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">${hover}</span>`;
+      return `<span class="trip-portrait"><img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68" loading="${loading}" decoding="async">${hover}</span>`;
     }).join('');
   return `<a class="trip-card" href="#/trip/${trip.id}?from=${encodeURIComponent(from)}">
     <h2>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h2>
-    <div class="cover-space ${trip.accent}">${trip.cover ? `<img src="${escapeHtml(trip.cover)}" alt="${escapeHtml(trip.city)} trip illustration">` : `${doodle('cover')}<span>Your illustration goes here</span>`}</div>
+    <div class="cover-space ${trip.accent}">${trip.cover ? `<img src="${escapeHtml(trip.cover)}" alt="${escapeHtml(trip.city)} trip illustration" loading="${loading}" decoding="async">` : `${doodle('cover')}<span>Your illustration goes here</span>`}</div>
     <p class="trip-month">${escapeHtml(trip.month)} ${trip.year}</p>
     ${portraits ? `<div class="trip-portraits">${portraits}</div>` : ''}
   </a>`;
+}
+function prepareTripCards(leadingTrip) {
+  main.querySelectorAll('.trip-card').forEach(card => {
+    const smiles = [...card.querySelectorAll('.trip-portrait-hover')];
+    if (smiles.length) {
+      // Keep every open-eye portrait visible until the whole card can switch together.
+      Promise.all(smiles.map(image => image.decode())).then(
+        () => card.classList.add('portraits-ready'),
+        () => {}
+      );
+    }
+  });
+  warmJourneyOpening(leadingTrip);
 }
 function renderHome() {
   main.innerHTML = `<section class="home-page">
@@ -58,12 +108,14 @@ function renderYears() {
 function renderYear(year) {
   const selected = trips.filter(trip => trip.year === year);
   if (!selected.length) return renderMissing();
-  main.innerHTML = `<section class="page">${backLink('#/timeline', 'All years')}${pageTitle(String(year), 'Which trip would you like to revisit?')}<nav class="list-tabs" aria-label="Choose a year">${years.map(y => `<a href="#/year/${y}" class="${y === year ? 'selected' : ''}" ${y === year ? 'aria-current="page"' : ''}>${y}</a>`).join('')}</nav><div class="trip-grid">${selected.map(t => tripCard(t, 'year/' + year)).join('')}</div><p class="page-note">Your hand-drawn trip covers will go in these spaces.</p></section>`;
+  main.innerHTML = `<section class="page">${backLink('#/timeline', 'All years')}${pageTitle(String(year), 'Which trip would you like to revisit?')}<nav class="list-tabs" aria-label="Choose a year">${years.map(y => `<a href="#/year/${y}" class="${y === year ? 'selected' : ''}" ${y === year ? 'aria-current="page"' : ''}>${y}</a>`).join('')}</nav><div class="trip-grid">${selected.map((trip, index) => tripCard(trip, 'year/' + year, index < 2)).join('')}</div><p class="page-note">Your hand-drawn trip covers will go in these spaces.</p></section>`;
+  prepareTripCards(selected[0]);
 }
 function renderCountry(code) {
   const selected = trips.filter(trip => trip.countryCode === code);
   if (!selected.length) return renderMissing();
-  main.innerHTML = `<section class="page">${backLink('#/map', 'World map')}${pageTitle(selected[0].country, 'Which trip would you like to revisit?')}<div class="trip-grid">${selected.map(t => tripCard(t, 'country/' + code)).join('')}</div><p class="page-note">Sample trips from different years, collected in one place.</p></section>`;
+  main.innerHTML = `<section class="page">${backLink('#/map', 'World map')}${pageTitle(selected[0].country, 'Which trip would you like to revisit?')}<div class="trip-grid">${selected.map((trip, index) => tripCard(trip, 'country/' + code, index < 2)).join('')}</div><p class="page-note">Sample trips from different years, collected in one place.</p></section>`;
+  prepareTripCards(selected[0]);
 }
 function renderMap() {
   const countries = window.WORLD_COUNTRIES || [];
@@ -119,11 +171,15 @@ function illustratedCharacters(characters) {
     const source = escapeHtml(walkCycle ?? image);
     const cycleClass = walkCycle ? ' walker-cycle' : '';
     const tasting = tastingImage
-      ? `<img class="walker-taste-pose" src="${escapeHtml(tastingImage)}" alt="" draggable="false">`
+      ? `<img class="walker-taste-pose" src="${escapeHtml(tastingImage)}" alt="" draggable="false" fetchpriority="low" decoding="async">`
       : '';
-    return `<div class="walker-portrait${tasting ? ' walker-portrait--tasting' : ''}"><img class="walker-travel-pose${cycleClass}" src="${source}" alt="" draggable="false">${tasting}</div>`;
+    return `<div class="walker-portrait"><img class="walker-travel-pose${cycleClass}" src="${source}" alt="" draggable="false" fetchpriority="high" decoding="async">${tasting}</div>`;
   }).join('');
   return `<div class="walker walker--illustrated" role="img"><div class="walker-portraits" aria-hidden="true">${portraits}</div><span class="walker-date"></span></div>`;
+}
+function memoryPhoto(stop) {
+  const photo = stop.image ? `<img alt="${escapeHtml(stop.label)}" decoding="async" hidden>` : '';
+  return `${doodle(stop.kind)}<span>${escapeHtml(stop.label)}</span>${photo}`;
 }
 function renderJourney(id, from) {
   // Old sample links continue to lead to an available preview.
@@ -146,7 +202,7 @@ function renderJourney(id, from) {
     <div class="journey-stage${illustrated ? ' journey-stage--illustrated' : ''}" role="region" aria-label="Interactive sample trip. Scroll down to walk forward, scroll up to return. Left and right arrow keys also move the character.">
       <div class="trip-topbar">${backLink(returnHref, 'Back to trips')}<div class="journey-name"><span>${trip.year}</span><h1>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h1><p class="trip-preview">${trip.days.length}-day sample journey</p></div></div>
       <section class="story-copy" aria-live="polite" aria-atomic="true"><div class="story-time"></div><h2></h2><p></p></section>
-      <div class="memory-layer">${stops.map((stop, i) => `<div class="memory" data-stop="${i}" aria-hidden="true"><div class="memory-space">${stop.image ? `<img src="${escapeHtml(stop.image)}" alt="${escapeHtml(stop.label)}">` : `${doodle(stop.kind)}<span>${escapeHtml(stop.label)}</span>`}</div><div class="memory-tag">${escapeHtml(stop.time)}</div>${['food','drink'].includes(stop.kind) ? `<button type="button" class="taste-button" data-taste="${i}" tabindex="-1">${stop.kind === 'drink' ? 'Try a little sip' : 'Try a little bite'}</button>` : ''}<div class="taste-note" hidden></div></div>`).join('')}</div>
+      <div class="memory-layer">${stops.map((stop, i) => `<div class="memory" data-stop="${i}" aria-hidden="true"><div class="memory-space">${memoryPhoto(stop)}</div><div class="memory-tag">${escapeHtml(stop.time)}</div>${['food','drink'].includes(stop.kind) ? `<button type="button" class="taste-button" data-taste="${i}" tabindex="-1">${stop.kind === 'drink' ? 'Try a little sip' : 'Try a little bite'}</button>` : ''}<div class="taste-note" hidden></div></div>`).join('')}</div>
       <div class="journey-controls">
         <div class="mobile-dock-heading"><output class="mobile-current-date"></output><span class="mobile-current-day"></span></div>
         <div ${railAttributes}>
@@ -164,6 +220,11 @@ function renderJourney(id, from) {
   const walker = main.querySelector('.walker');
   const story = main.querySelector('.story-copy');
   const memories = [...main.querySelectorAll('.memory')];
+  const photos = memories.map(memory => memory.querySelector('.memory-space img'));
+  walker.querySelectorAll('.walker-taste-pose').forEach(image => {
+    const portrait = image.parentElement;
+    image.decode().then(() => portrait.classList.add('walker-portrait--tasting'), () => {});
+  });
   const date = main.querySelector('.walker-date');
   const ending = main.querySelector('.journey-end');
   const rail = main.querySelector('.controller-rail');
@@ -203,9 +264,23 @@ function renderJourney(id, from) {
       memory.style.width = `${bounds.width}px`;
     });
   }
+  function loadPhoto(index, priority) {
+    const image = photos[index];
+    if (!image) return;
+    if (priority === 'high' || !image.hasAttribute('src')) image.fetchPriority = priority;
+    if (image.hasAttribute('src')) return;
+    image.src = stops[index].image;
+    image.decode().then(() => { image.hidden = false; }, () => {});
+  }
   function updateCopy(state) {
     if (lastIndex === state.index) return;
     lastIndex = state.index;
+    loadPhoto(state.index, 'high');
+    if (!navigator.connection?.saveData) {
+      // Prepare either direction for scrolling and the timeline controls.
+      loadPhoto(state.index + 1, 'low');
+      loadPhoto(state.index - 1, 'low');
+    }
     walker.classList.remove('tasting');
     clearTimeout(tasteTimer);
     story.querySelector('.story-time').textContent = `Day ${state.stop.dayIndex + 1} · ${state.stop.time}`;
@@ -365,6 +440,9 @@ function render() {
   else if (parts[0] === 'country') renderCountry(parts[1]);
   else if (parts[0] === 'trip') renderJourney(parts[1], from);
   else renderMissing();
+  if (!parts.length || parts[0] === 'timeline') {
+    warmTripCards(trips.filter(trip => trip.year === years[years.length - 1]));
+  }
   const title = parts[0] === 'year' ? parts[1] : parts[0] === 'country' ? trips.find(t => t.countryCode === parts[1])?.country : parts[0] === 'trip' ? trips.find(t => t.id === parts[1])?.city : parts[0] === 'map' ? 'World map' : parts[0] === 'timeline' ? 'Timeline' : '';
   document.title = title ? `${title} · Zoe’s Travel Log` : 'Zoe’s Travel Log';
   main.focus({preventScroll:true});
@@ -374,5 +452,6 @@ document.querySelector('.skip-link').addEventListener('click', event => {
   main.focus({preventScroll:true});
 });
 window.addEventListener('hashchange', render);
+['pointerover', 'pointerdown', 'focusin'].forEach(type => main.addEventListener(type, warmDestination));
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 render();
