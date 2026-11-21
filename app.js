@@ -29,11 +29,14 @@ function shortDate(date) {
   return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', timeZone:'UTC'}).format(new Date(date + 'T12:00:00Z'));
 }
 function tripCard(trip, from) {
+  const portraits = (trip.characters ?? []).map(({name, portrait}) =>
+    portrait ? `<img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">` : ''
+  ).join('');
   return `<a class="trip-card" href="#/trip/${trip.id}?from=${encodeURIComponent(from)}">
     <h2>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h2>
     <div class="cover-space ${trip.accent}">${trip.cover ? `<img src="${escapeHtml(trip.cover)}" alt="${escapeHtml(trip.city)} trip illustration">` : `${doodle('cover')}<span>Your illustration goes here</span>`}</div>
     <p class="trip-month">${escapeHtml(trip.month)} ${trip.year}</p>
-    <div class="trip-summary">${trip.days.length} days · Sample journey</div>
+    ${portraits ? `<div class="trip-portraits">${portraits}</div>` : ''}
   </a>`;
 }
 function renderHome() {
