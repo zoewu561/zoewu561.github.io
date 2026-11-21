@@ -66,3 +66,37 @@ test('map example has two Japan journeys and one South Korea journey', () => {
     assert.ok(trip.days.every(day => day.stops.length > 0));
   }
 });
+
+test('mobile thumb follows the range at both edges, including a very narrow phone', () => {
+  for (const width of [248, 284, 342, 382, 620]) {
+    assert.equal(math.sliderLeft(0, width, 56), 0);
+    assert.equal(math.sliderLeft(1, width, 56) + 56, width);
+    assert.equal(math.sliderLeft(.5, width, 56), (width - 56) / 2);
+  }
+  assert.equal(math.sliderLeft(-1, 342, 56), 0);
+  assert.equal(math.sliderLeft(3, 342, 56), 286);
+});
+
+test('mobile Next visits every memory and Back can return through every day', () => {
+  for (const trip of trips) {
+    const stops = math.buildStops(trip);
+    let progress = 0;
+    for (let i = 1; i < stops.length; i++) {
+      progress = math.adjacentStopPosition(stops, progress, 1);
+      assert.equal(math.stateAt(stops, progress).index, i);
+    }
+    assert.equal(math.adjacentStopPosition(stops, progress, 1), 1);
+    for (let i = stops.length - 2; i >= 0; i--) {
+      progress = math.adjacentStopPosition(stops, progress, -1);
+      assert.equal(math.stateAt(stops, progress).index, i);
+    }
+    assert.equal(progress, 0);
+  }
+});
+
+test('mobile can finish a trip whose last day has a single stop', () => {
+  const stops = math.buildStops({days:[{date:'2026-01-01',stops:[{}]},{date:'2026-01-02',stops:[{}]}]});
+  assert.equal(math.adjacentStopPosition(stops, 0, 1), .5);
+  assert.equal(math.adjacentStopPosition(stops, .5, 1), 1);
+  assert.equal(math.adjacentStopPosition(stops, .9, -1), .5);
+});

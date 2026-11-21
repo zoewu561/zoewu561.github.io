@@ -27,6 +27,16 @@
     const inset = width < 600 ? 16 : 34;
     return inset + clamp(progress, 0, 1) * Math.max(0, width - characterWidth - 2 * inset);
   }
-  root.JourneyMath = {clamp, buildStops, stateAt, characterLeft};
+  function sliderLeft(progress, width, thumbWidth) {
+    return clamp(progress, 0, 1) * Math.max(0, width - thumbWidth);
+  }
+  function adjacentStopPosition(stops, progress, direction) {
+    const state = stateAt(stops, progress);
+    if (direction > 0) return state.index === stops.length - 1 ? 1 : stops[state.index + 1].position;
+    // Back first returns to the start of the current stop, then to the one before it.
+    if (state.progress - state.stop.position > 0.002) return state.stop.position;
+    return stops[Math.max(0, state.index - 1)].position;
+  }
+  root.JourneyMath = {clamp, buildStops, stateAt, characterLeft, sliderLeft, adjacentStopPosition};
   if (typeof module !== 'undefined' && module.exports) module.exports = root.JourneyMath;
 })(typeof window !== 'undefined' ? window : globalThis);

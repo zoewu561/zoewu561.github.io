@@ -65,7 +65,7 @@ function renderMap() {
     const existing = visited.get(trip.countryCode);
     visited.set(trip.countryCode, {name:trip.country, count:existing ? existing.count + 1 : 1});
   });
-  main.innerHTML = `<section class="page map-page">${backLink('#/', 'Back home')}${pageTitle('A world of memories', 'Hover over a coloured country, then click to explore.')}
+  main.innerHTML = `<section class="page map-page">${backLink('#/', 'Back home')}${pageTitle('A world of memories', window.matchMedia('(max-width:760px)').matches ? 'Tap a coloured country, or choose a place below.' : 'Hover over a coloured country, then click to explore.')}
     <div class="map-canvas"><svg class="world-map" viewBox="0 0 1000 500" role="group" aria-label="World map of sample journeys">${countries.map(country => {
       const record = visited.get(country.code);
       const label = record ? `${record.name}: ${record.count} sample ${record.count === 1 ? 'trip' : 'trips'}. Open country.` : country.name;
@@ -120,7 +120,14 @@ function renderJourney(id, from) {
       <div class="trip-topbar">${backLink(returnHref, 'Back to trips')}<div class="journey-name"><span>${trip.year}</span><h1>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h1><p class="trip-preview">${trip.days.length}-day sample journey</p></div></div>
       <section class="story-copy" aria-live="polite" aria-atomic="true"><div class="story-time"></div><h2></h2><p></p></section>
       <div class="memory-layer">${stops.map((stop, i) => `<div class="memory" data-stop="${i}" aria-hidden="true"><div class="memory-space">${stop.image ? `<img src="${escapeHtml(stop.image)}" alt="${escapeHtml(stop.label)}">` : `${doodle(stop.kind)}<span>${escapeHtml(stop.label)}</span>`}</div><div class="memory-tag">${escapeHtml(stop.time)}</div>${['food','drink'].includes(stop.kind) ? `<button type="button" class="taste-button" data-taste="${i}" tabindex="-1">${stop.kind === 'drink' ? 'Try a little sip' : 'Try a little bite'}</button>` : ''}<div class="taste-note" hidden></div></div>`).join('')}</div>
-      ${placeholderCharacter()}
+      <div class="journey-controls">
+        <div class="mobile-dock-heading"><output class="mobile-current-date"></output><span class="mobile-current-day"></span></div>
+        <div class="controller-rail">
+          ${placeholderCharacter()}
+          <input class="journey-range" type="range" min="0" max="10000" step="1" value="0" aria-label="Drag Zoe to move forward or back through the trip">
+        </div>
+        <div class="mobile-dock-footer"><button class="mobile-step mobile-previous" type="button">Back</button><span>Drag me to explore</span><button class="mobile-step mobile-next" type="button">Next</button></div>
+      </div>
       <div class="journey-end"><p>A little trip, remembered.</p><a href="${returnHref}">Back to trips</a></div>
       <p class="journey-instructions"><span class="mouse" aria-hidden="true"></span>Scroll to walk. Scroll back to revisit.</p><span class="journey-key-hint">Keyboard: left / right</span>
     </div>
@@ -132,6 +139,15 @@ function renderJourney(id, from) {
   const memories = [...main.querySelectorAll('.memory')];
   const date = main.querySelector('.walker-date');
   const ending = main.querySelector('.journey-end');
+  const rail = main.querySelector('.controller-rail');
+  const range = main.querySelector('.journey-range');
+  const previousButton = main.querySelector('.mobile-previous');
+  const nextButton = main.querySelector('.mobile-next');
+  const mobileDate = main.querySelector('.mobile-current-date');
+  const mobileDay = main.querySelector('.mobile-current-day');
+  const mobileQuery = window.matchMedia('(max-width:760px)');
+  let mobile = mobileQuery.matches;
+  let scrubbing = false;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let displayed = 0;
   let target = 0;
@@ -144,9 +160,14 @@ function renderJourney(id, from) {
   const consumed = new Set();
 
   function measure() {
+    stage.setAttribute('aria-label', mobile ? 'Interactive sample trip. Drag Zoe at the bottom, or use Back and Next to explore each memory.' : 'Interactive sample trip. Scroll down to walk forward, scroll up to return. Left and right arrow keys also move the character.');
     const headerHeight = document.querySelector('.site-header').offsetHeight;
     trackTop = window.scrollY + track.getBoundingClientRect().top - headerHeight;
     travel = Math.max(1, track.offsetHeight - stage.offsetHeight);
+    if (mobile) {
+      memories.forEach(memory => { memory.style.left = ''; });
+      return;
+    }
     const width = stage.clientWidth;
     const halfWidth = memories[0]?.offsetWidth / 2 || 109;
     memories.forEach((memory, index) => {
@@ -163,6 +184,8 @@ function renderJourney(id, from) {
     story.querySelector('h2').textContent = state.stop.title;
     story.querySelector('p').textContent = state.stop.text;
     date.textContent = shortDate(state.stop.date);
+    mobileDate.textContent = shortDate(state.stop.date);
+    mobileDay.textContent = `Day ${state.stop.dayIndex + 1} of ${trip.days.length}`;
     walker.setAttribute('aria-label', `Placeholder character. ${shortDate(state.stop.date)}. ${state.stop.title}`);
     memories.forEach((memory, index) => {
       const selected = index === state.index;
@@ -181,9 +204,11 @@ function renderJourney(id, from) {
     if (!active) return;
     const delta = target - displayed;
     const moving = Math.abs(delta) > 0.0001;
-    displayed = !moving || reducedMotion ? target : displayed + delta * 0.22;
+    displayed = !moving || reducedMotion || scrubbing ? target : displayed + delta * 0.22;
     const state = math.stateAt(stops, displayed);
-    const left = math.characterLeft(displayed, stage.clientWidth, walker.offsetWidth);
+    const left = mobile
+      ? math.sliderLeft(displayed, rail.clientWidth, walker.offsetWidth)
+      : math.characterLeft(displayed, stage.clientWidth, walker.offsetWidth);
     walker.style.transform = `translateX(${left}px)`;
     const phase = left * 0.11;
     const stride = moving && !reducedMotion ? Math.sin(phase) * 26 : 0;
@@ -192,21 +217,58 @@ function renderJourney(id, from) {
     walker.style.setProperty('--bob', `${moving && !reducedMotion ? -Math.abs(Math.sin(phase)) * 2 : 0}px`);
     updateCopy(state);
     ending.classList.toggle('visible', state.complete);
+    range.value = String(Math.round(displayed * 10000));
+    range.setAttribute('aria-valuetext', `Day ${state.stop.dayIndex + 1} of ${trip.days.length}, ${shortDate(state.stop.date)}. ${state.stop.title}`);
+    previousButton.disabled = state.index === 0 && displayed === 0;
+    nextButton.disabled = state.complete;
     if (moving && !reducedMotion) frame = requestAnimationFrame(paint);
   }
   function schedule() { if (!frame && active) frame = requestAnimationFrame(paint); }
   function onScroll() {
+    if (mobile) return;
     target = math.clamp((window.scrollY - trackTop) / travel, 0, 1);
     schedule();
   }
-  function onResize() { measure(); onScroll(); }
+  function onResize() {
+    const nextMobile = mobileQuery.matches;
+    const changedMode = nextMobile !== mobile;
+    mobile = nextMobile;
+    measure();
+    if (changedMode) {
+      // Keep the same moment when rotating a phone or crossing the desktop breakpoint.
+      window.scrollTo({top:mobile ? 0 : trackTop + target * travel, behavior:'instant'});
+      schedule();
+    } else if (mobile) schedule();
+    else onScroll();
+  }
+  function onRangeInput() {
+    if (!mobile) return;
+    target = math.clamp(range.valueAsNumber / 10000, 0, 1);
+    schedule();
+  }
+  function seekStop(direction) {
+    target = math.adjacentStopPosition(stops, target, direction);
+    if (!mobile) window.scrollTo({top:trackTop + target * travel, behavior:'instant'});
+    else {
+      // A long note may have been scrolled; bring the new moment back into view.
+      window.scrollTo({top:0, behavior:'instant'});
+    }
+    schedule();
+  }
+  range.addEventListener('input', onRangeInput);
+  range.addEventListener('pointerdown', () => { scrubbing = true; });
+  function stopScrubbing() { scrubbing = false; schedule(); }
+  window.addEventListener('pointerup', stopScrubbing);
+  window.addEventListener('pointercancel', stopScrubbing);
+  previousButton.addEventListener('click', () => seekStop(-1));
+  nextButton.addEventListener('click', () => seekStop(1));
   function onKey(event) {
     if (event.altKey || event.metaKey || event.ctrlKey || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
       event.preventDefault();
       const sign = event.key === 'ArrowRight' ? 1 : -1;
       target = math.clamp(target + sign * 0.035, 0, 1);
-      window.scrollTo({top:trackTop + target * travel, behavior:'instant'});
+      if (!mobile) window.scrollTo({top:trackTop + target * travel, behavior:'instant'});
       schedule();
     }
   }
@@ -235,7 +297,7 @@ function renderJourney(id, from) {
   }));
   measure();
   updateCopy(math.stateAt(stops, 0));
-  onScroll();
+  if (mobile) schedule(); else onScroll();
   window.addEventListener('scroll', onScroll, {passive:true});
   window.addEventListener('resize', onResize);
   window.addEventListener('keydown', onKey);
@@ -246,6 +308,8 @@ function renderJourney(id, from) {
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', onResize);
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('pointerup', stopScrubbing);
+    window.removeEventListener('pointercancel', stopScrubbing);
   };
 }
 function renderMissing() {

@@ -15,7 +15,12 @@ The final photos, trip covers and character artwork are intentionally left to ad
 - Only the current date and memory are shown. Memory illustrations appear at their
   position along the path, then fade when the next stop is reached.
 - Food and drink stops include a simple replayable bite/sip demonstration.
-- Keyboard left/right is also available. Mobile-specific controls are deferred.
+- Keyboard left/right is also available on desktop.
+- On phones, the current memory is arranged vertically. A fixed bottom dock lets
+  visitors drag the character in either direction, or use Back/Next to visit stops.
+  The date and day count follow the selected moment. Normal vertical scrolling
+  remains available to read longer notes without advancing the journey.
+- Switching between phone and desktop widths preserves the current journey progress.
 
 ## Content and future artwork
 
@@ -39,7 +44,9 @@ Run calculation checks with `node --test tests/journey.test.cjs`.
 
 Desktop browser checks cover home/year/trip/country navigation, scrolling in both
  directions, day changes, the last-day endpoint and the replayable drink interaction.
-Mobile presentation is a temporary basic adaptation, not the final mobile design.
+Phone browser checks cover 320px and 390px portrait layouts, forward/reverse
+character dragging, the drink interaction, the last-day endpoint, Back/Next,
+map/year navigation, horizontal overflow and switching back to the desktop layout.
 
 The existing repository README is preserved. Old stock photo files may remain from
 an earlier revision but are not used in this scaffold. World map data continues to
