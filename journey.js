@@ -11,7 +11,6 @@
         stops.push({...stop, date: day.date, dayIndex, stopIndex, position});
       });
     });
-    if (stops.length > 1 && trip.days[trip.days.length - 1].stops.length > 1) stops[stops.length - 1].position = 1;
     return stops;
   }
   function stateAt(stops, progress) {
@@ -27,6 +26,11 @@
     const inset = width < 600 ? 16 : 34;
     return inset + clamp(progress, 0, 1) * Math.max(0, width - characterWidth - 2 * inset);
   }
+  function memoryBounds(stops, index, stageWidth, characterWidth) {
+    const start = characterLeft(stops[index].position, stageWidth, characterWidth);
+    const end = characterLeft(stops[index + 1]?.position ?? 1, stageWidth, characterWidth);
+    return {left: start, width: end - start + characterWidth};
+  }
   function sliderLeft(progress, width, thumbWidth) {
     return clamp(progress, 0, 1) * Math.max(0, width - thumbWidth);
   }
@@ -37,6 +41,6 @@
     if (state.progress - state.stop.position > 0.002) return state.stop.position;
     return stops[Math.max(0, state.index - 1)].position;
   }
-  root.JourneyMath = {clamp, buildStops, stateAt, characterLeft, sliderLeft, adjacentStopPosition};
+  root.JourneyMath = {clamp, buildStops, stateAt, characterLeft, memoryBounds, sliderLeft, adjacentStopPosition};
   if (typeof module !== 'undefined' && module.exports) module.exports = root.JourneyMath;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -100,3 +100,22 @@ test('mobile can finish a trip whose last day has a single stop', () => {
   assert.equal(math.adjacentStopPosition(stops, .5, 1), 1);
   assert.equal(math.adjacentStopPosition(stops, .9, -1), .5);
 });
+
+test('each photo spans its walking interval, including the last one', () => {
+  for (const trip of trips) {
+    const stops = math.buildStops(trip);
+    assert.ok(stops.at(-1).position < 1);
+    for (const stageWidth of [761, 1024, 1440]) {
+      const walkerWidth = trip.characters ? 165 : 83;
+      for (const [i, stop] of stops.entries()) {
+        const end = stops[i + 1]?.position ?? 1;
+        const photo = math.memoryBounds(stops, i, stageWidth, walkerWidth);
+        assert.equal(photo.left, math.characterLeft(stop.position, stageWidth, walkerWidth));
+        assert.ok(photo.width > walkerWidth);
+        assert.ok(Math.abs(photo.left + photo.width -
+          (math.characterLeft(end, stageWidth, walkerWidth) + walkerWidth)) < 1e-8);
+        assert.equal(math.stateAt(stops, (stop.position + end) / 2).index, i);
+      }
+    }
+  }
+});
