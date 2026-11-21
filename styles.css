@@ -24,12 +24,12 @@ body.is-journey .site-header{position:sticky;top:0}body.is-journey .site-footer{
   height:var(--trip-portrait-size);
   object-fit:contain;
 }
-.trip-portrait-open{opacity:0}
-.trip-card:focus-visible .trip-portrait:has(.trip-portrait-open) img:first-child{opacity:0}
-.trip-card:focus-visible .trip-portrait-open{opacity:1}
+.trip-portrait-hover{opacity:0}
+.trip-card:focus-visible .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
+.trip-card:focus-visible .trip-portrait-hover{opacity:1}
 @media(any-hover:hover){
-  .trip-card:hover .trip-portrait:has(.trip-portrait-open) img:first-child{opacity:0}
-  .trip-card:hover .trip-portrait-open{opacity:1}
+  .trip-card:hover .trip-portrait:has(.trip-portrait-hover) img:first-child{opacity:0}
+  .trip-card:hover .trip-portrait-hover{opacity:1}
 }
 
 /* The mobile controller is transparent to the approved desktop layout. */

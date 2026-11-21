@@ -30,11 +30,11 @@ function shortDate(date) {
 }
 function tripCard(trip, from) {
   const portraits = (trip.characters ?? []).filter(character => character.portrait)
-    .map(({name, portrait, portraitOpen}) => {
-      const open = portraitOpen
-        ? `<img class="trip-portrait-open" src="${escapeHtml(portraitOpen)}" alt="" aria-hidden="true" width="68" height="68">`
+    .map(({name, portrait, portraitHover}) => {
+      const hover = portraitHover
+        ? `<img class="trip-portrait-hover" src="${escapeHtml(portraitHover)}" alt="" aria-hidden="true" width="68" height="68">`
         : '';
-      return `<span class="trip-portrait"><img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">${open}</span>`;
+      return `<span class="trip-portrait"><img src="${escapeHtml(portrait)}" alt="${escapeHtml(name)}" width="68" height="68">${hover}</span>`;
     }).join('');
   return `<a class="trip-card" href="#/trip/${trip.id}?from=${encodeURIComponent(from)}">
     <h2>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h2>
