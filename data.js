@@ -3,6 +3,7 @@
  * Add a cover image later with cover: 'assets/your-cover.png'.
  * Add a stop image with image: 'assets/your-photo.png'.
  * Give a trip a characters array to show its illustrated walkers.
+ * Optional walkCycle images contain four left-to-right frames of equal width.
  * Each day may contain any number of stops. Array order is travel order.
  * Day names and image spaces are generated automatically.
  * countryCode: ISO alpha-3, matching WORLD_COUNTRIES.
@@ -11,8 +12,8 @@ window.TRIPS = [
   {
     id: 'tokyo-demo', year: 2026, country: 'Japan', countryCode: 'JPN', city: 'Tokyo',
     characters: [
-      {name: 'Zoe', image: 'assets/zoe-traveler.png'},
-      {name: 'her travel companion', image: 'assets/travel-companion.png'}
+      {name: 'Zoe', image: 'assets/zoe-traveler.png', walkCycle: 'assets/zoe-walk-cycle.png'},
+      {name: 'her travel companion', image: 'assets/travel-companion.png', walkCycle: 'assets/companion-walk-cycle.png'}
     ],
     month: 'September', start: '2026-09-25', end: '2026-09-28', accent: 'lavender', cover: '',
     days: [

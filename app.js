@@ -108,9 +108,11 @@ function placeholderCharacter() {
   </svg><span class="walker-date"></span></div>`;
 }
 function illustratedCharacters(characters) {
-  const portraits = characters.map(({image}) =>
-    `<img src="${escapeHtml(image)}" alt="" draggable="false">`
-  ).join('');
+  const portraits = characters.map(({image, walkCycle}) => {
+    const source = escapeHtml(walkCycle ?? image);
+    const imageClass = walkCycle ? ' class="walker-cycle"' : '';
+    return `<div class="walker-portrait"><img${imageClass} src="${source}" alt="" draggable="false"></div>`;
+  }).join('');
   return `<div class="walker walker--illustrated" role="img"><div class="walker-portraits" aria-hidden="true">${portraits}</div><span class="walker-date"></span></div>`;
 }
 function renderJourney(id, from) {
@@ -121,6 +123,7 @@ function renderJourney(id, from) {
   const stops = math.buildStops(trip);
   const characters = trip.characters ?? [];
   const illustrated = characters.length > 0;
+  const animated = characters.some(({walkCycle}) => walkCycle);
   const walkerName = illustrated
     ? new Intl.ListFormat('en').format(characters.map(({name}) => name))
     : 'Placeholder character';
@@ -220,15 +223,23 @@ function renderJourney(id, from) {
     const moving = Math.abs(delta) > 0.0001;
     displayed = !moving || reducedMotion || scrubbing ? target : displayed + delta * 0.22;
     const state = math.stateAt(stops, displayed);
+    const walkerWidth = walker.offsetWidth;
+    const stageWidth = mobile ? rail.clientWidth : stage.clientWidth;
     const left = mobile
-      ? math.sliderLeft(displayed, rail.clientWidth, walker.offsetWidth)
-      : math.characterLeft(displayed, stage.clientWidth, walker.offsetWidth);
+      ? math.sliderLeft(displayed, stageWidth, walkerWidth)
+      : math.characterLeft(displayed, stageWidth, walkerWidth);
     walker.style.transform = `translateX(${left}px)`;
     const phase = left * 0.11;
     const stride = moving && !reducedMotion ? Math.sin(phase) * 26 : 0;
     walker.style.setProperty('--stride', `${stride}deg`);
     walker.style.setProperty('--opposite-stride', `${-stride}deg`);
     walker.style.setProperty('--bob', `${moving && !reducedMotion ? -Math.abs(Math.sin(phase)) * 2 : 0}px`);
+    if (animated && !reducedMotion) {
+      const start = mobile ? 0 : math.characterLeft(0, stageWidth, walkerWidth);
+      const step = Math.floor((left - start) / (mobile ? 6 : 10));
+      walker.style.setProperty('--walk-frame', step % 4);
+      walker.style.setProperty('--alternate-walk-frame', (step + 2) % 4);
+    }
     updateCopy(state);
     ending.classList.toggle('visible', state.complete);
     range.value = String(Math.round(displayed * 10000));

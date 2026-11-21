@@ -24,12 +24,26 @@ body.is-journey .site-header{position:sticky;top:0}body.is-journey .site-footer{
   height:111px;
   transform:translateY(var(--bob));
 }
-.walker-portraits img{
-  display:block;
+.walker-portrait{
   width:var(--portrait-width);
+  height:100%;
+  overflow:hidden;
+}
+.walker-portrait img{
+  display:block;
+  width:100%;
   height:100%;
   object-fit:contain;
   object-position:center bottom;
+}
+.walker-portrait .walker-cycle{
+  width:400%;
+  max-width:none;
+  object-fit:fill;
+  transform:translateX(calc(-25% * var(--walk-frame,0)));
+}
+.walker-portrait:nth-child(even) .walker-cycle{
+  transform:translateX(calc(-25% * var(--alternate-walk-frame,0)));
 }
 
 @media(max-width:760px){
