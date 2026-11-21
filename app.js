@@ -1,19 +1,286 @@
-const main=document.querySelector('main');
-const trips=window.TRIPS;
-const years=[...new Set(trips.map(t=>t.year))].sort((a,b)=>b-a);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const sample='<span class="sample-tag">示範內容 · Sample trips</span>';
-function loadCountries(){return window.WORLD_COUNTRIES?Promise.resolve(window.WORLD_COUNTRIES):Promise.reject(Error('Map unavailable'));}
-function mapMarkup(features,mini=false){return `<svg class="${mini?'mini-map':'world-map'}" viewBox="0 0 1000 500" ${mini?'aria-hidden="true"': 'role="group" aria-label="World map. Select a highlighted country to explore sample trips."'}>${features.map(c=>{const visited=trips.some(t=>t.countryCode===c.code);return `<path d="${c.path}" class="${visited?'visited':''}" ${!mini&&visited?`data-country="${c.code}" tabindex="0" role="button" aria-label="${esc(c.name)}: ${trips.filter(t=>t.countryCode===c.code).length} sample trips"`:''}><title>${esc(c.name)}</title></path>`}).join('')}</svg>`;}
-function heading(eyebrow,title,en,description){return `<div class="page-heading"><div><div class="eyebrow">${eyebrow}</div><h1><span>${title}</span><i>${en}</i></h1><p>${description}</p></div>${sample}</div>`;}
-function back(url,label){return `<a class="breadcrumb" href="${url}">← ${label}</a>`;}
-function card(t){return `<a class="trip-card" href="#/trip/${t.id}"><div class="trip-photo" style="background:${t.color}"><img src="${t.image}" alt="${esc(t.place)} travel photograph" loading="lazy"><span class="photo-label">${esc(t.countryEn)} · SAMPLE</span></div><div class="trip-copy"><div class="eyebrow">${esc(t.place)}</div><h2>${esc(t.title)}</h2><p>${esc(t.subtitle)}</p><div class="date"><span>${esc(t.dates)}</span><span>Explore trip ↗</span></div></div></a>`;}
-function home(){main.innerHTML=`<section class="hero"><div class="eyebrow">Places, people & little moments</div><h1>A little further,<br>a little <em>closer.</em></h1><p class="chinese">走遠一點，離喜歡的生活近一點。</p><p class="intro">A collection of places and memories, one little escape at a time.</p><div class="hero-stamp">a world<br>of memories</div></section><div class="section-kicker">How would you like to wander?</div><section class="choices" aria-label="Choose how to explore"><a class="choice choice-one" href="#/timeline"><div class="choice-art"><div class="timeline-art"><span class="year-dot"><i>✧</i>2024</span><span class="year-dot"><i>✳</i>2025</span><span class="year-dot"><i>✧</i>2026</span></div></div><div class="choice-copy"><div class="eyebrow">01 / By time</div><h2>時間線<span>Timeline</span></h2><p>挑一個年份，重溫那一年的旅行。</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a><a class="choice choice-two" href="#/map"><div class="choice-art" id="mini-map"><span style="font-size:65px;color:#a2ad8f">◎</span></div><div class="choice-copy"><div class="eyebrow">02 / By place</div><h2>地圖<span>World map</span></h2><p>從世界地圖，找到下一段回憶。</p><span class="circle-arrow" aria-hidden="true">↗</span></div></a></section><div class="home-bottom"><span>Different paths. The same lovely memories.</span>${sample}</div>`;loadCountries().then(data=>{const el=document.querySelector('#mini-map');if(el)el.innerHTML=mapMarkup(data,true)}).catch(()=>{});}
-function timeline(){main.innerHTML=`<section class="page-top">${back('#/','回到首頁 · Home')}${heading('The years go by, the memories stay','時間線','Through the years','選一個年份，看看那一年留下的旅行回憶。')}<div class="year-grid">${years.map(year=>{const ts=trips.filter(t=>t.year===year);return `<a class="year-card" href="#/year/${year}"><img src="${ts[0].image}" alt="${year} sample travel collection"><div class="year-label"><strong>${year}</strong><span>${ts.length} ${ts.length===1?'little escape':'little escapes'} · 示範旅行</span></div><span class="circle-arrow" aria-hidden="true">↗</span></a>`}).join('')}</div></section>`;}
-function yearView(year){const ts=trips.filter(t=>t.year===year);if(!ts.length)return missing();main.innerHTML=`<section class="page-top">${back('#/timeline','所有年份 · All years')}${heading('A chapter in the journal',String(year),'The little escapes',`這一年的旅行，都在這裡。 · ${ts.length} sample ${ts.length===1?'trip':'trips'}`)}<nav class="year-switcher" aria-label="Choose year">${years.map(y=>`<a href="#/year/${y}" class="${y===year?'selected':''}" ${y===year?'aria-current="page"':''}>${y}</a>`).join('')}</nav><div class="trips-grid">${ts.map(card).join('')}</div></section>`;}
-function selectCountry(code){const ts=trips.filter(t=>t.countryCode===code);if(!ts.length)return;document.querySelectorAll('[data-country]').forEach(el=>{const selected=el.dataset.country===code;el.classList.toggle(el.tagName.toLowerCase()==='path'?'selected':'active',selected);if(el.tagName.toLowerCase()==='button')el.setAttribute('aria-pressed',String(selected));});document.querySelector('#country-detail').innerHTML=`<div class="eyebrow">A pin on the map</div><h2>${esc(ts[0].country)}</h2><p class="country-en">${esc(ts[0].countryEn)}</p><div class="eyebrow">${ts.length} sample ${ts.length===1?'trip':'trips'}</div>${ts.map(t=>`<a class="map-trip" href="#/trip/${t.id}?from=map"><img src="${t.image}" alt="${esc(t.place)}"><h3>${esc(t.title)} ↗</h3><p>${esc(t.place)} · ${t.year}</p></a>`).join('')}`;}
-function mapView(){main.innerHTML=`<section class="page-top">${back('#/','回到首頁 · Home')}${heading('A world of little escapes','地圖','Somewhere lovely','滑過有標記的國家，探索那裡的旅行。手機上輕點即可。')}<div class="map-layout"><div><div class="map-panel"><div id="map-canvas"><div class="map-loading">Unfolding the world…</div></div><div class="map-caption"><span><i class="legend-dot"></i>有旅行紀錄 · Sample destinations</span><span>Hover or tap to explore ↗</span></div></div><div class="country-list" aria-label="Select a destination">${[...new Set(trips.map(t=>t.countryCode))].map(code=>`<button class="country-button" data-country="${code}" aria-pressed="false">${trips.find(t=>t.countryCode===code).country}</button>`).join('')}</div><p class="map-hint">每個有顏色的地方，都藏著一段旅程。<br>Country buttons also let you explore small destinations easily.</p></div><aside class="map-side" id="country-detail" aria-live="polite"></aside></div></section>`;selectCountry('JPN');document.querySelectorAll('.country-button').forEach(b=>b.onclick=()=>selectCountry(b.dataset.country));loadCountries().then(data=>{const canvas=document.querySelector('#map-canvas');if(!canvas)return;canvas.innerHTML=mapMarkup(data);canvas.querySelectorAll('[data-country]').forEach(p=>{p.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')selectCountry(p.dataset.country)});p.addEventListener('focus',()=>selectCountry(p.dataset.country));p.addEventListener('click',()=>selectCountry(p.dataset.country));p.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectCountry(p.dataset.country)}})});const current=document.querySelector('.country-button.active');selectCountry(current?current.dataset.country:'JPN');}).catch(()=>{const el=document.querySelector('#map-canvas');if(el)el.innerHTML='<div class="map-loading">The map could not load.<br><button class="country-button" onclick="mapView()">Try again</button><p style="font:12px Arial">You can still explore using the country buttons below.</p></div>';});}
-function detail(id,fromMap){const t=trips.find(t=>t.id===id);if(!t)return missing();main.innerHTML=`<article class="page-top">${back(fromMap?'#/map':`#/year/${t.year}`,fromMap?'回到地圖 · Back to map':`${t.year} 年的旅行 · Back to year`)}<div class="detail-hero"><img src="${t.image}" alt="${esc(t.place)} scenic photograph"><span class="photo-label">ILLUSTRATIVE PHOTO · SAMPLE TRIP</span></div><div class="detail-info"><div><div class="eyebrow">${esc(t.countryEn)} / ${esc(t.place)}</div><h1>${esc(t.title)}</h1><p>${esc(t.subtitle)}</p></div><div class="detail-date">${esc(t.dates)}<br><br>${sample}</div></div><div class="detail-body"><p>${esc(t.intro)}</p><h2>旅途片刻 <span style="font:italic 17px Georgia;color:#7b877b">Little moments</span></h2>${t.notes.map((n,i)=>`<div class="note-row"><span class="note-number">0${i+1}</span><p>${esc(n)}</p></div>`).join('')}<div class="demo-notice">這是一篇示範旅行，日期、文字與照片皆為展示版型使用，並非 Zoe 的實際旅行紀錄。<br>This sample shows the layout. Your photos and stories will go here.</div></div></article>`;}
-function missing(){main.innerHTML='<div class="not-found"><div class="eyebrow">A little detour</div><h1>This page wandered off.</h1><a class="text-link" href="#/">Back home ↗</a></div>';}
-function render(){const [path,query='']=(location.hash.slice(1)||'/').split('?');const bits=path.split('/').filter(Boolean);document.querySelectorAll('[data-nav]').forEach(a=>{const active=a.dataset.nav===(['timeline','year'].includes(bits[0])?'timeline':bits[0]==='map'?'map':query.includes('from=map')?'map':bits[0]==='trip'?'timeline':'');a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});if(!bits.length)home();else if(bits[0]==='timeline')timeline();else if(bits[0]==='year')yearView(Number(bits[1]));else if(bits[0]==='map')mapView();else if(bits[0]==='trip')detail(bits[1],new URLSearchParams(query).get('from')==='map');else missing();document.title=(bits[0]==='map'?'地圖':bits[0]==='timeline'?'時間線':bits[0]==='year'?bits[1]:bits[0]==='trip'?trips.find(t=>t.id===bits[1])?.title||'Trip':'Home')+' · little escapes';window.scrollTo(0,0);main.focus({preventScroll:true});}
-window.addEventListener('hashchange',render);render();
+'use strict';
+const main = document.querySelector('#main');
+const trips = window.TRIPS;
+const math = window.JourneyMath;
+const years = [...new Set(trips.map(trip => trip.year))].sort((a, b) => a - b);
+const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+let disposePage = () => {};
+
+function doodle(kind, className = '') {
+  const shapes = {
+    timeline: '<path d="M12 40Q46 35 76 40T120 38"/><circle cx="15" cy="39" r="5" fill="#d6bfdf"/><circle cx="48" cy="38" r="5" fill="#d6bfdf"/><circle cx="83" cy="40" r="5" fill="#d6bfdf"/><circle cx="117" cy="38" r="5" fill="#d6bfdf"/>',
+    map: '<path d="m10 22 16-10 13 4 7 13-7 10 7 11-11 16-10-7-3-17-10-5Z M64 15l17-6 11 11 17 1 12 13-10 10-13-2-4 14-12 9-6-16-12-5 6-12-9-7Z"/><path d="m104 61 14-4 5 11-12 4Z"/>',
+    view: '<path d="m10 62 33-37 13 16 20-27 38 48Z"/><path d="m61 33 15-19 15 23-14-8-7 7Z"/><circle cx="26" cy="16" r="8"/>',
+    walk: '<path d="M24 65V22h25v43M49 65V10h25v55M74 65V30h28v35M12 66h105"/><path d="M32 30h7m-7 10h7m18-20h8m-8 12h8m18 9h10M58 65V49h9"/>',
+    drink: '<path d="m35 27 5 40h45l5-40Z M33 27h59M51 14v13m22-14v14M49 7c-6 5 5 6 0 12m24-14c-6 5 5 6 0 12M90 35h8c17 0 14 22-11 22M29 71h67"/><path d="M49 43q14-7 27 0"/>',
+    food: '<path d="M18 46q44-41 90 0v20H18Z M18 47q22 10 45 0t45 0 M32 35l10 6m15-17 2 13m18-10-4 11m20 0-8 4 M12 72h104"/>',
+    arrival: '<path d="m12 43 43-9 17-22 8 2-10 19 37-4 8 7-47 9-12 18-8 1 6-18-25 3-10 10-7-1 8-14Z"/>',
+    home: '<path d="m22 34 41-25 41 25M31 30v39h65V30M54 69V47h19v22M42 36h8m28 0h8"/><path d="m103 14 3-7 4 7 8 3-8 3-4 7-3-7-7-3Z"/>',
+    cover: '<rect x="17" y="8" width="94" height="63" rx="5" stroke-dasharray="4 5"/><path d="m29 57 22-23 16 15 15-18 18 26"/><circle cx="84" cy="23" r="5"/>',
+    star: '<path d="m62 5 10 25 26 8-26 9-10 26-9-26-26-9 26-8Z"/>'
+  };
+  return `<svg class="${className}" viewBox="0 0 128 80" aria-hidden="true">${shapes[kind] || shapes.view}</svg>`;
+}
+function backLink(href, label) { return `<a class="back-link" href="${href}">${escapeHtml(label)}</a>`; }
+function pageTitle(title, subtitle, eyebrow = '') {
+  return `<div class="page-title">${eyebrow ? `<div class="eyebrow">${escapeHtml(eyebrow)}</div>` : ''}<h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle)}</p></div>`;
+}
+function shortDate(date) {
+  return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', timeZone:'UTC'}).format(new Date(date + 'T12:00:00Z'));
+}
+function tripCard(trip, from) {
+  return `<a class="trip-card" href="#/trip/${trip.id}?from=${encodeURIComponent(from)}">
+    <h2>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h2>
+    <div class="cover-space ${trip.accent}">${trip.cover ? `<img src="${escapeHtml(trip.cover)}" alt="${escapeHtml(trip.city)} trip illustration">` : `${doodle('cover')}<span>Your illustration goes here</span>`}</div>
+    <p class="trip-month">${escapeHtml(trip.month)} ${trip.year}</p>
+    <div class="trip-summary">${trip.days.length} days · Sample journey</div>
+  </a>`;
+}
+function renderHome() {
+  main.innerHTML = `<section class="home-page">
+    <div class="home-intro"><div class="eyebrow">Places, little moments & memories</div><h1>Zoe’s <span>travel log</span></h1><p>How would you like to explore?</p><svg class="home-spark" viewBox="0 0 50 60" aria-hidden="true"><path d="m25 4 5 18 16 7-16 6-5 19-5-19L4 29l16-7Z"/></svg></div>
+    <div class="home-choices">
+      <a class="home-choice" href="#/timeline"><div class="choice-icon">${doodle('timeline')}</div><h2>Timeline</h2><p>One year at a time.</p></a>
+      <a class="home-choice" href="#/map"><div class="choice-icon">${doodle('map')}</div><h2>Map</h2><p>One place at a time.</p></a>
+    </div><p class="home-note">A little preview of the journal. The memories and pictures come next.</p>
+  </section>`;
+}
+function renderYears() {
+  main.innerHTML = `<section class="page">${backLink('#/', 'Back home')}${pageTitle('Through the years', 'Pick a year to revisit.')}<div class="year-choices">${years.map(year => `<a class="year-choice" href="#/year/${year}"><strong>${year}</strong><span>${trips.filter(t => t.year === year).length} sample ${trips.filter(t => t.year === year).length === 1 ? 'journey' : 'journeys'}</span></a>`).join('')}</div></section>`;
+}
+function renderYear(year) {
+  const selected = trips.filter(trip => trip.year === year);
+  if (!selected.length) return renderMissing();
+  main.innerHTML = `<section class="page">${backLink('#/timeline', 'All years')}${pageTitle(String(year), 'Which trip would you like to revisit?')}<nav class="list-tabs" aria-label="Choose a year">${years.map(y => `<a href="#/year/${y}" class="${y === year ? 'selected' : ''}" ${y === year ? 'aria-current="page"' : ''}>${y}</a>`).join('')}</nav><div class="trip-grid">${selected.map(t => tripCard(t, 'year/' + year)).join('')}</div><p class="page-note">Your hand-drawn trip covers will go in these spaces.</p></section>`;
+}
+function renderCountry(code) {
+  const selected = trips.filter(trip => trip.countryCode === code);
+  if (!selected.length) return renderMissing();
+  main.innerHTML = `<section class="page">${backLink('#/map', 'World map')}${pageTitle(selected[0].country, 'Which trip would you like to revisit?')}<div class="trip-grid">${selected.map(t => tripCard(t, 'country/' + code)).join('')}</div><p class="page-note">Sample trips from different years, collected in one place.</p></section>`;
+}
+function renderMap() {
+  const countries = window.WORLD_COUNTRIES || [];
+  const visited = new Map();
+  trips.forEach(trip => {
+    const existing = visited.get(trip.countryCode);
+    visited.set(trip.countryCode, {name:trip.country, count:existing ? existing.count + 1 : 1});
+  });
+  main.innerHTML = `<section class="page map-page">${backLink('#/', 'Back home')}${pageTitle('A world of memories', 'Hover over a coloured country, then click to explore.')}
+    <div class="map-canvas"><svg class="world-map" viewBox="0 0 1000 500" role="group" aria-label="World map of sample journeys">${countries.map(country => {
+      const record = visited.get(country.code);
+      const label = record ? `${record.name}: ${record.count} sample ${record.count === 1 ? 'trip' : 'trips'}. Open country.` : country.name;
+      return `<path class="country-shape ${record ? 'visited' : ''}" d="${country.path}" ${record ? `data-country="${country.code}" tabindex="0" role="link" aria-label="${escapeHtml(label)}"` : 'aria-hidden="true"'}><title>${escapeHtml(label)}</title></path>`;
+    }).join('')}</svg></div><div class="country-shortcuts" aria-label="Countries with sample trips">${[...visited].map(([code, record]) => `<a class="country-shortcut" href="#/country/${code}">${escapeHtml(record.name)}<span aria-label="${record.count} sample trips">${record.count}</span></a>`).join('')}</div><p class="map-note">Coloured countries have sample journeys. Your own trips will colour the map.</p>
+    <div class="map-tooltip" role="tooltip" hidden></div>
+  </section>`;
+  const tooltip = main.querySelector('.map-tooltip');
+  const showTooltip = (path, x, y) => {
+    const record = visited.get(path.dataset.country);
+    tooltip.textContent = `${record.name} · ${record.count} ${record.count === 1 ? 'trip' : 'trips'}`;
+    tooltip.hidden = false;
+    tooltip.style.left = `${math.clamp(x + 12, 8, window.innerWidth - tooltip.offsetWidth - 12)}px`;
+    tooltip.style.top = `${math.clamp(y + 17, 8, window.innerHeight - tooltip.offsetHeight - 12)}px`;
+  };
+  main.querySelectorAll('[data-country]').forEach(path => {
+    path.addEventListener('pointermove', event => showTooltip(path, event.clientX, event.clientY));
+    path.addEventListener('pointerleave', () => { tooltip.hidden = true; });
+    path.addEventListener('focus', () => { const rect = path.getBoundingClientRect(); showTooltip(path, rect.right, rect.top); });
+    path.addEventListener('blur', () => { tooltip.hidden = true; });
+    path.addEventListener('click', () => { location.hash = '/country/' + path.dataset.country; });
+    path.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); location.hash = '/country/' + path.dataset.country; }
+    });
+  });
+}
+function placeholderCharacter() {
+  return `<div class="walker" role="img" aria-label="Placeholder character, walking across the journey"><svg class="walker-art" viewBox="0 0 83 111" aria-hidden="true">
+    <ellipse cx="40" cy="105" rx="23" ry="3" fill="#ece5ef"/>
+    <g class="leg-back"><path class="line" d="m38 69-9 18-9 9 13 3"/></g>
+    <g class="leg-front"><path class="line" d="m44 70 10 19-1 12 15 1"/></g>
+    <path class="shirt" d="m35 43-10 9 6 21 23-1 2-23-8-8Z"/>
+    <path class="line" d="m29 50-10 9 5 12"/>
+    <circle class="head" cx="46" cy="27" r="18"/>
+    <path class="hair" d="M29 30q-11-14 1-22Q43-1 58 11l7 7-10-1-6-6q-1 14-20 19Z"/>
+    <path class="hair" d="m29 19-6 6 3 9-8 2 4-9-5-3 9-8Z"/>
+    <circle cx="54" cy="25" r="1.7" fill="#665b70"/><path class="line mouth" d="M53 33q5 3 8-2"/>
+    <circle cx="46" cy="32" r="3" fill="#efd2dc"/>
+    <g class="arm"><path class="line" d="m48 49 12 10 10-3"/></g>
+  </svg><span class="walker-date"></span></div>`;
+}
+function renderJourney(id, from) {
+  // Old sample links continue to lead to an available preview.
+  const aliases = {'japan-spring':'tokyo-demo', 'seoul-autumn':'seoul-demo', 'germany-summer':'osaka-demo'};
+  const trip = trips.find(t => t.id === (aliases[id] || id));
+  if (!trip) return renderMissing();
+  const stops = math.buildStops(trip);
+  const allowedFrom = /^(year\/\d{4}|country\/[A-Z]{3})$/.test(from || '') ? from : 'year/' + trip.year;
+  const returnHref = '#/' + allowedFrom;
+  main.innerHTML = `<article class="journey-scroll" style="--travel-distance:${Math.max(3800, stops.length * 490)}px">
+    <div class="journey-stage" role="region" aria-label="Interactive sample trip. Scroll down to walk forward, scroll up to return. Left and right arrow keys also move the character.">
+      <div class="trip-topbar">${backLink(returnHref, 'Back to trips')}<div class="journey-name"><span>${trip.year}</span><h1>${escapeHtml(trip.country)}, ${escapeHtml(trip.city)}</h1><p class="trip-preview">${trip.days.length}-day sample journey</p></div></div>
+      <section class="story-copy" aria-live="polite" aria-atomic="true"><div class="story-time"></div><h2></h2><p></p></section>
+      <div class="memory-layer">${stops.map((stop, i) => `<div class="memory" data-stop="${i}" aria-hidden="true"><div class="memory-space">${stop.image ? `<img src="${escapeHtml(stop.image)}" alt="${escapeHtml(stop.label)}">` : `${doodle(stop.kind)}<span>${escapeHtml(stop.label)}</span>`}</div><div class="memory-tag">${escapeHtml(stop.time)}</div>${['food','drink'].includes(stop.kind) ? `<button type="button" class="taste-button" data-taste="${i}" tabindex="-1">${stop.kind === 'drink' ? 'Try a little sip' : 'Try a little bite'}</button>` : ''}<div class="taste-note" hidden></div></div>`).join('')}</div>
+      ${placeholderCharacter()}
+      <div class="journey-end"><p>A little trip, remembered.</p><a href="${returnHref}">Back to trips</a></div>
+      <p class="journey-instructions"><span class="mouse" aria-hidden="true"></span>Scroll to walk. Scroll back to revisit.</p><span class="journey-key-hint">Keyboard: left / right</span>
+    </div>
+  </article>`;
+  const track = main.querySelector('.journey-scroll');
+  const stage = main.querySelector('.journey-stage');
+  const walker = main.querySelector('.walker');
+  const story = main.querySelector('.story-copy');
+  const memories = [...main.querySelectorAll('.memory')];
+  const date = main.querySelector('.walker-date');
+  const ending = main.querySelector('.journey-end');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let displayed = 0;
+  let target = 0;
+  let lastIndex = -1;
+  let frame = 0;
+  let tasteTimer = 0;
+  let active = true;
+  let travel = 1;
+  let trackTop = 0;
+  const consumed = new Set();
+
+  function measure() {
+    const headerHeight = document.querySelector('.site-header').offsetHeight;
+    trackTop = window.scrollY + track.getBoundingClientRect().top - headerHeight;
+    travel = Math.max(1, track.offsetHeight - stage.offsetHeight);
+    const width = stage.clientWidth;
+    const halfWidth = memories[0]?.offsetWidth / 2 || 109;
+    memories.forEach((memory, index) => {
+      const x = math.characterLeft(stops[index].position, width, walker.offsetWidth) + walker.offsetWidth / 2;
+      memory.style.left = `${math.clamp(x, halfWidth + 25, Math.max(halfWidth + 25, width - halfWidth - 25))}px`;
+    });
+  }
+  function updateCopy(state) {
+    if (lastIndex === state.index) return;
+    lastIndex = state.index;
+    walker.classList.remove('tasting');
+    clearTimeout(tasteTimer);
+    story.querySelector('.story-time').textContent = `Day ${state.stop.dayIndex + 1} · ${state.stop.time}`;
+    story.querySelector('h2').textContent = state.stop.title;
+    story.querySelector('p').textContent = state.stop.text;
+    date.textContent = shortDate(state.stop.date);
+    walker.setAttribute('aria-label', `Placeholder character. ${shortDate(state.stop.date)}. ${state.stop.title}`);
+    memories.forEach((memory, index) => {
+      const selected = index === state.index;
+      memory.classList.toggle('active', selected);
+      memory.setAttribute('aria-hidden', String(!selected));
+      const button = memory.querySelector('button');
+      if (button) button.tabIndex = selected ? 0 : -1;
+    });
+    story.classList.remove('changed');
+    // Restart the small text fade, without moving the layout.
+    void story.offsetWidth;
+    story.classList.add('changed');
+  }
+  function paint() {
+    frame = 0;
+    if (!active) return;
+    const delta = target - displayed;
+    const moving = Math.abs(delta) > 0.0001;
+    displayed = !moving || reducedMotion ? target : displayed + delta * 0.22;
+    const state = math.stateAt(stops, displayed);
+    const left = math.characterLeft(displayed, stage.clientWidth, walker.offsetWidth);
+    walker.style.transform = `translateX(${left}px)`;
+    const phase = left * 0.11;
+    const stride = moving && !reducedMotion ? Math.sin(phase) * 26 : 0;
+    walker.style.setProperty('--stride', `${stride}deg`);
+    walker.style.setProperty('--opposite-stride', `${-stride}deg`);
+    walker.style.setProperty('--bob', `${moving && !reducedMotion ? -Math.abs(Math.sin(phase)) * 2 : 0}px`);
+    updateCopy(state);
+    ending.classList.toggle('visible', state.complete);
+    if (moving && !reducedMotion) frame = requestAnimationFrame(paint);
+  }
+  function schedule() { if (!frame && active) frame = requestAnimationFrame(paint); }
+  function onScroll() {
+    target = math.clamp((window.scrollY - trackTop) / travel, 0, 1);
+    schedule();
+  }
+  function onResize() { measure(); onScroll(); }
+  function onKey(event) {
+    if (event.altKey || event.metaKey || event.ctrlKey || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const sign = event.key === 'ArrowRight' ? 1 : -1;
+      target = math.clamp(target + sign * 0.035, 0, 1);
+      window.scrollTo({top:trackTop + target * travel, behavior:'instant'});
+      schedule();
+    }
+  }
+  main.querySelectorAll('[data-taste]').forEach(button => button.addEventListener('click', () => {
+    const index = Number(button.dataset.taste);
+    if (lastIndex !== index) return;
+    const memory = memories[index];
+    const note = memory.querySelector('.taste-note');
+    if (consumed.has(index)) {
+      consumed.delete(index);
+      memory.classList.remove('eaten');
+      note.hidden = true;
+      button.textContent = stops[index].kind === 'drink' ? 'Try a little sip' : 'Try a little bite';
+      walker.classList.remove('tasting');
+      clearTimeout(tasteTimer);
+    } else {
+      consumed.add(index);
+      memory.classList.add('eaten');
+      note.textContent = stops[index].kind === 'drink' ? 'A happy little sip!' : 'A delicious little memory!';
+      note.hidden = false;
+      button.textContent = 'Try again';
+      walker.classList.add('tasting');
+      clearTimeout(tasteTimer);
+      tasteTimer = setTimeout(() => { if (active) walker.classList.remove('tasting'); }, 1300);
+    }
+  }));
+  measure();
+  updateCopy(math.stateAt(stops, 0));
+  onScroll();
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onResize);
+  window.addEventListener('keydown', onKey);
+  disposePage = () => {
+    active = false;
+    cancelAnimationFrame(frame);
+    clearTimeout(tasteTimer);
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('keydown', onKey);
+  };
+}
+function renderMissing() {
+  main.innerHTML = '<section class="not-found"><h1>This page wandered off.</h1><p>There isn’t a journey here yet.</p><a href="#/">Back home</a></section>';
+}
+function render() {
+  disposePage();
+  disposePage = () => {};
+  const [path, query = ''] = (location.hash.slice(1) || '/').split('?');
+  const parts = path.split('/').filter(Boolean);
+  const from = new URLSearchParams(query).get('from');
+  document.body.classList.toggle('is-journey', parts[0] === 'trip');
+  // Reset before mounting a journey, so a previous page's scroll cannot move it.
+  window.scrollTo({top:0, behavior:'instant'});
+  let currentNav = ['timeline','year'].includes(parts[0]) ? 'timeline' : ['map','country'].includes(parts[0]) ? 'map' : parts[0] === 'trip' ? (from?.startsWith('country/') ? 'map' : 'timeline') : '';
+  document.querySelectorAll('[data-nav]').forEach(link => {
+    const selected = link.dataset.nav === currentNav;
+    link.classList.toggle('active', selected);
+    if (selected) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+  });
+  if (!parts.length) renderHome();
+  else if (parts[0] === 'timeline') renderYears();
+  else if (parts[0] === 'year') renderYear(Number(parts[1]));
+  else if (parts[0] === 'map') renderMap();
+  else if (parts[0] === 'country') renderCountry(parts[1]);
+  else if (parts[0] === 'trip') renderJourney(parts[1], from);
+  else renderMissing();
+  const title = parts[0] === 'year' ? parts[1] : parts[0] === 'country' ? trips.find(t => t.countryCode === parts[1])?.country : parts[0] === 'trip' ? trips.find(t => t.id === parts[1])?.city : parts[0] === 'map' ? 'World map' : parts[0] === 'timeline' ? 'Timeline' : '';
+  document.title = title ? `${title} · Zoe’s Travel Log` : 'Zoe’s Travel Log';
+  main.focus({preventScroll:true});
+}
+document.querySelector('.skip-link').addEventListener('click', event => {
+  event.preventDefault();
+  main.focus({preventScroll:true});
+});
+window.addEventListener('hashchange', render);
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+render();
